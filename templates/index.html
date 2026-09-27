@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bibliotheca — Library Management System</title>
+  <meta name="description" content="Bibliotheca: A modern Vercel-inspired SaaS Library Management System powered by Python FastAPI & SQLAlchemy.">
+  
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="alternate icon" type="image/png" href="/static/favicon.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            zinc: {
+              850: '#1f1f23',
+              900: '#18181b',
+              950: '#09090b',
+            },
+            brand: {
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans antialiased min-h-screen flex flex-col md:flex-row selection:bg-blue-600 selection:text-white">
+
+  <div id="mobile-sidebar-backdrop" onclick="app.toggleMobileSidebar(false)" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm hidden md:hidden transition-opacity"></div>
+
+  <aside id="sidebar-nav" class="fixed md:sticky top-0 z-50 h-screen w-64 bg-zinc-900/95 backdrop-blur-md border-r border-zinc-800 flex flex-col justify-between p-4 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out shrink-0">
+    
+    <div class="space-y-6">
+      <div class="flex items-center justify-between px-2 pt-2">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-blue-400/30">
+            <i data-lucide="library" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
+              Bibliotheca <span class="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">LMS</span>
+            </h1>
+            <p class="text-[11px] text-zinc-400">Library Control Center</p>
+          </div>
+        </div>
+        <button onclick="app.toggleMobileSidebar(false)" class="md:hidden text-zinc-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-1 text-xs font-medium">
+        <button onclick="app.switchTab('dashboard')" id="nav-dashboard" class="sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition group active">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 group-hover:text-blue-400 transition-colors"></i>
+          <span>Dashboard</span>
+        </button>
+        <button onclick="app.switchTab('books')" id="nav-books" class="sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition group">
+          <i data-lucide="book-open" class="w-4 h-4 group-hover:text-blue-400 transition-colors"></i>
+          <span class="flex-grow text-left">Book Catalog</span>
+          <span id="nav-badge-books" class="px-1.5 py-0.5 text-[10px] rounded-full bg-zinc-800 text-zinc-400 font-mono">0</span>
+        </button>
+        <button onclick="app.switchTab('loans')" id="nav-loans" class="sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition group">
+          <i data-lucide="arrow-right-left" class="w-4 h-4 group-hover:text-blue-400 transition-colors"></i>
+          <span class="flex-grow text-left">Active Loans</span>
+          <span id="nav-badge-loans" class="px-1.5 py-0.5 text-[10px] rounded-full bg-zinc-800 text-zinc-400 font-mono">0</span>
+        </button>
+        <button onclick="app.switchTab('members')" id="nav-members" class="sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition group">
+          <i data-lucide="users" class="w-4 h-4 group-hover:text-blue-400 transition-colors"></i>
+          <span class="flex-grow text-left">Members</span>
+        </button>
+        <button onclick="app.switchTab('settings')" id="nav-settings" class="sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition group">
+          <i data-lucide="settings" class="w-4 h-4 group-hover:text-blue-400 transition-colors"></i>
+          <span>System Settings</span>
+        </button>
+      </nav>
+
+      <div class="px-1 pt-2">
+        <button onclick="app.openBorrowModal()" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-blue-600/20 transition flex items-center justify-center gap-2 border border-blue-400/20">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>Issue Book</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="border-t border-zinc-800 pt-3 px-1 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-zinc-800">
+          AD
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-white truncate">Administrator</p>
+          <p class="text-[10px] text-zinc-500 truncate">admin@bibliotheca.io</p>
+        </div>
+      </div>
+      <button onclick="app.refreshAllData()" title="Refresh Data" class="text-zinc-500 hover:text-zinc-300 p-1.5 rounded-md hover:bg-zinc-800 transition">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+
+  </aside>
+
+  <div class="flex-grow flex flex-col min-w-0 min-h-screen">
+
+    <header class="sticky top-0 z-30 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 flex-grow max-w-xl">
+        <button onclick="app.toggleMobileSidebar(true)" class="md:hidden text-zinc-400 hover:text-white p-2 rounded-lg bg-zinc-900 border border-zinc-800">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        <div class="relative w-full">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-zinc-500"></i>
+          <input type="text" id="global-search-input" onkeyup="app.handleGlobalSearch()" placeholder="Search title, author, ISBN, or member..." class="w-full pl-9 pr-16 py-1.5 bg-zinc-900/90 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition">
+          <kbd class="hidden sm:inline-flex items-center gap-0.5 absolute right-2.5 top-2 px-1.5 py-0.5 text-[10px] font-mono text-zinc-500 bg-zinc-800 border border-zinc-700/60 rounded">
+            <span>ctrl</span>k
+          </kbd>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <select id="top-status-filter" onchange="app.handleTopFilter(this.value)" class="hidden sm:block px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-zinc-700 cursor-pointer">
+          <option value="all">Status: All</option>
+          <option value="available">Status: Available</option>
+          <option value="low_stock">Status: Low Stock</option>
+          <option value="overdue">Status: Overdue Loans</option>
+        </select>
+
+        <button onclick="app.switchTab('loans'); app.filterLoans('overdue');" class="relative p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          <span id="alert-overdue-count" class="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] font-extrabold rounded-full bg-rose-500 text-white hidden">0</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-grow p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 flex items-center justify-between hover:border-zinc-700/80 transition shadow-sm">
+          <div>
+            <p class="text-[11px] font-medium uppercase tracking-wider text-zinc-400">Total Volumes</p>
+            <h3 id="stat-total-books" class="text-2xl font-bold text-white mt-0.5">0</h3>
+            <p class="text-[11px] text-zinc-500 mt-1"><span id="stat-total-copies" class="text-zinc-300 font-semibold">0</span> physical copies</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+            <i data-lucide="book-marked" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 flex items-center justify-between hover:border-zinc-700/80 transition shadow-sm">
+          <div>
+            <p class="text-[11px] font-medium uppercase tracking-wider text-zinc-400">Currently Borrowed</p>
+            <h3 id="stat-active-loans" class="text-2xl font-bold text-blue-400 mt-0.5">0</h3>
+            <p class="text-[11px] text-zinc-500 mt-1"><span id="stat-available-copies" class="text-emerald-400 font-semibold">0</span> ready in stock</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+            <i data-lucide="book-open-check" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 flex items-center justify-between hover:border-rose-500/40 transition shadow-sm relative overflow-hidden">
+          <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-rose-500/5 rounded-full blur-xl"></div>
+          <div>
+            <p class="text-[11px] font-medium uppercase tracking-wider text-rose-400">Overdue Returns</p>
+            <h3 id="stat-overdue-loans" class="text-2xl font-bold text-rose-400 mt-0.5">0</h3>
+            <p class="text-[11px] text-zinc-500 mt-1">Requires immediate follow-up</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center">
+            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 flex items-center justify-between hover:border-zinc-700/80 transition shadow-sm">
+          <div>
+            <p class="text-[11px] font-medium uppercase tracking-wider text-zinc-400">Active Members</p>
+            <h3 id="stat-total-members" class="text-2xl font-bold text-zinc-100 mt-0.5">0</h3>
+            <p class="text-[11px] text-zinc-500 mt-1">Registered patrons</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+            <i data-lucide="users" class="w-5 h-5"></i>
+          </div>
+        </div>
+      </div>
+
+      <section id="view-dashboard" class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i>
+                  <span>Active Loan Circulation</span>
+                </h2>
+                <p class="text-xs text-zinc-400">Recent checked out volumes across active members</p>
+              </div>
+              <button onclick="app.switchTab('loans')" class="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 transition">
+                <span>View All</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="text-zinc-500 border-b border-zinc-800 font-semibold uppercase tracking-wider">
+                    <th class="pb-3">Book Title</th>
+                    <th class="pb-3">Borrower</th>
+                    <th class="pb-3">Due Date</th>
+                    <th class="pb-3">Status</th>
+                    <th class="pb-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboard-recent-loans" class="divide-y divide-zinc-800/60 text-zinc-300">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                <span>Catalog Highlights</span>
+              </h2>
+              <button onclick="app.switchTab('books')" class="text-xs text-zinc-400 hover:text-white transition">Browse</button>
+            </div>
+
+            <div id="dashboard-popular-books" class="space-y-3">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-books" class="hidden space-y-6">
+        <div class="bg-zinc-900/90 border border-zinc-800 p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div class="relative w-full sm:w-64">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-zinc-500"></i>
+              <input type="text" id="books-search-input" onkeyup="app.handleBookSearch()" placeholder="Search title, author, ISBN..." class="w-full pl-9 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-700">
+            </div>
+
+            <select id="books-genre-filter" onchange="app.handleBookSearch()" class="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-zinc-700 cursor-pointer">
+              <option value="All">All Categories</option>
+              <option value="Technology">Technology</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Fiction">Fiction</option>
+              <option value="Self-Help">Self-Help</option>
+              <option value="Science">Science</option>
+              <option value="History">History</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+            <div class="flex items-center bg-zinc-950 p-1 rounded-lg border border-zinc-800 text-xs">
+              <button onclick="app.setCatalogView('table')" id="view-btn-table" class="px-2.5 py-1 rounded-md flex items-center gap-1.5 text-zinc-400 hover:text-white transition active-view-btn">
+                <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Table</span>
+              </button>
+              <button onclick="app.setCatalogView('grid')" id="view-btn-grid" class="px-2.5 py-1 rounded-md flex items-center gap-1.5 text-zinc-400 hover:text-white transition">
+                <i data-lucide="grid" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Grid</span>
+              </button>
+            </div>
+
+            <button onclick="app.openBookModal()" class="py-1.5 px-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-600/20 transition flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Add Book</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="catalog-table-container" class="bg-zinc-900/90 border border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-zinc-950/80 text-zinc-400 border-b border-zinc-800 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th class="px-5 py-3.5">Book Details</th>
+                  <th class="px-5 py-3.5">ISBN</th>
+                  <th class="px-5 py-3.5">Category</th>
+                  <th class="px-5 py-3.5">Stock Copies</th>
+                  <th class="px-5 py-3.5">Status</th>
+                  <th class="px-5 py-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="books-table-body" class="divide-y divide-zinc-800 text-zinc-300">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="catalog-grid-container" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        </div>
+      </section>
+
+      <section id="view-loans" class="hidden space-y-6">
+        <div class="bg-zinc-900/90 border border-zinc-800 p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div class="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-lg border border-zinc-800 text-xs">
+            <button onclick="app.filterLoans('All')" id="loan-filter-All" class="px-3 py-1 rounded-md text-zinc-100 font-semibold bg-zinc-800">All Loans</button>
+            <button onclick="app.filterLoans('borrowed')" id="loan-filter-borrowed" class="px-3 py-1 rounded-md text-zinc-400 hover:text-white transition">Active</button>
+            <button onclick="app.filterLoans('overdue')" id="loan-filter-overdue" class="px-3 py-1 rounded-md text-zinc-400 hover:text-white transition">Overdue</button>
+            <button onclick="app.filterLoans('returned')" id="loan-filter-returned" class="px-3 py-1 rounded-md text-zinc-400 hover:text-white transition">Returned</button>
+          </div>
+
+          <button onclick="app.openBorrowModal()" class="py-1.5 px-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-600/20 transition flex items-center gap-1.5">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Issue Loan</span>
+          </button>
+        </div>
+
+        <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-zinc-950/80 text-zinc-400 border-b border-zinc-800 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th class="px-6 py-4">Loan ID</th>
+                  <th class="px-6 py-4">Book Title</th>
+                  <th class="px-6 py-4">Borrower</th>
+                  <th class="px-6 py-4">Issue Date</th>
+                  <th class="px-6 py-4">Due Date</th>
+                  <th class="px-6 py-4">Status</th>
+                  <th class="px-6 py-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="loans-table-body" class="divide-y divide-zinc-800 text-zinc-300">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-members" class="hidden space-y-6">
+        <div class="bg-zinc-900/90 border border-zinc-800 p-4 rounded-xl flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div class="relative w-full sm:w-80">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-zinc-500"></i>
+            <input type="text" id="members-search-input" onkeyup="app.handleMemberSearch()" placeholder="Search members by name, email..." class="w-full pl-9 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-700">
+          </div>
+          <button onclick="app.openMemberModal()" class="py-1.5 px-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-600/20 transition flex items-center gap-1.5 w-full sm:w-auto justify-center">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Register Member</span>
+          </button>
+        </div>
+
+        <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-zinc-950/80 text-zinc-400 border-b border-zinc-800 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th class="px-6 py-4">Patron ID</th>
+                  <th class="px-6 py-4">Full Name</th>
+                  <th class="px-6 py-4">Email Address</th>
+                  <th class="px-6 py-4">Phone</th>
+                  <th class="px-6 py-4">Active Loans</th>
+                  <th class="px-6 py-4">Status</th>
+                  <th class="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="members-table-body" class="divide-y divide-zinc-800 text-zinc-300">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-settings" class="hidden space-y-6">
+        <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-6 max-w-2xl space-y-6">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="settings" class="w-5 h-5 text-blue-400"></i>
+              <span>System & Environment Settings</span>
+            </h2>
+            <p class="text-xs text-zinc-400 mt-1">Runtime database metadata and deployment configuration</p>
+          </div>
+
+          <div class="space-y-4 text-xs">
+            <div class="p-4 bg-zinc-950 border border-zinc-800 rounded-lg space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-zinc-400 font-medium">Framework Engine</span>
+                <span class="font-mono text-blue-400 font-semibold">FastAPI v0.121 + Python 3.13</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-zinc-400 font-medium">Database Layer</span>
+                <span class="font-mono text-emerald-400 font-semibold">SQLAlchemy ORM (SQLite / PostgreSQL)</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-zinc-400 font-medium">Deployment Platform</span>
+                <span class="font-mono text-purple-400 font-semibold">Vercel Serverless Ready (@vercel/python)</span>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-zinc-800 flex justify-between items-center">
+              <div>
+                <p class="font-semibold text-white">Seed Demo Dataset</p>
+                <p class="text-[11px] text-zinc-500">Reset default books, members, and sample loan transactions</p>
+              </div>
+              <button onclick="app.refreshAllData(); app.toast('Database operational and active', 'success')" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-lg text-xs font-medium transition">
+                Resync State
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="modal-borrow" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="book-up" class="w-4 h-4 text-blue-400"></i>
+          <span>Issue Book Loan</span>
+        </h3>
+        <button onclick="app.closeModal('modal-borrow')" class="text-zinc-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-borrow" onsubmit="app.submitBorrowForm(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Select Book *</label>
+          <select id="borrow-book-select" required class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Select Borrower / Member *</label>
+          <select id="borrow-member-select" required class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Loan Duration (Days) *</label>
+          <input type="number" id="borrow-days" min="1" max="90" value="14" required class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-zinc-800">
+          <button type="button" onclick="app.closeModal('modal-borrow')" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-medium transition">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/20 transition">Confirm Issue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-book" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 id="modal-book-title" class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="book-plus" class="w-4 h-4 text-blue-400"></i>
+          <span>Add New Book</span>
+        </h3>
+        <button onclick="app.closeModal('modal-book')" class="text-zinc-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-book" onsubmit="app.submitBookForm(event)" class="space-y-4 text-xs">
+        <input type="hidden" id="book-form-id">
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Book Title *</label>
+          <input type="text" id="book-form-title" required placeholder="e.g. Designing Data-Intensive Applications" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-zinc-300 mb-1">Author *</label>
+            <input type="text" id="book-form-author" required placeholder="e.g. Martin Kleppmann" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-zinc-300 mb-1">ISBN Code *</label>
+            <input type="text" id="book-form-isbn" required placeholder="e.g. 978-1449373320" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-zinc-300 mb-1">Category / Genre</label>
+            <input type="text" id="book-form-genre" placeholder="e.g. Engineering" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-zinc-300 mb-1">Total Quantity *</label>
+            <input type="number" id="book-form-quantity" min="1" value="1" required class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Cover Image URL (Optional)</label>
+          <input type="url" id="book-form-cover" placeholder="https://images.unsplash.com/photo-..." class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Description</label>
+          <textarea id="book-form-description" rows="3" placeholder="Brief summary of the title..." class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-zinc-800">
+          <button type="button" onclick="app.closeModal('modal-book')" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-medium transition">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/20 transition">Save Book</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-member" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 id="modal-member-title" class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-4 h-4 text-blue-400"></i>
+          <span>Register New Member</span>
+        </h3>
+        <button onclick="app.closeModal('modal-member')" class="text-zinc-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="form-member" onsubmit="app.submitMemberForm(event)" class="space-y-4 text-xs">
+        <input type="hidden" id="member-form-id">
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Full Name *</label>
+          <input type="text" id="member-form-name" required placeholder="e.g. Alex Mercer" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Email Address *</label>
+          <input type="email" id="member-form-email" required placeholder="alex.mercer@example.com" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Phone Number</label>
+          <input type="text" id="member-form-phone" placeholder="+1 (555) 019-2831" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Membership Code *</label>
+          <input type="text" id="member-form-code" required placeholder="e.g. LIB-2026-088" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:border-zinc-700 focus:outline-none">
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-zinc-800">
+          <button type="button" onclick="app.closeModal('modal-member')" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-medium transition">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/20 transition">Save Member</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
